@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Poker Hand Tracker</title>
+<style>
+:root{--bg:#0b1220;--panel:#121b2d;--panel2:#1a263d;--text:#f4f7fb;--muted:#9eabc0;--line:#2b3a55;--accent:#42d392;--danger:#ff6b6b;--gold:#f6c85f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit}
+button{border:0;color:var(--text);background:var(--panel2);border-radius:12px;padding:13px 14px;font-weight:700}
+button:active{transform:scale(.98)}
+.wrap{max-width:760px;margin:auto;padding:env(safe-area-inset-top) 14px calc(18px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 2px 10px}
+h1{font-size:21px;margin:0}.sub{color:var(--muted);font-size:12px;margin-top:3px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:15px;margin:10px 0}
+label{display:block;color:var(--muted);font-size:12px;margin:0 0 6px}
+input,select{width:100%;background:#0d1627;color:var(--text);border:1px solid var(--line);border-radius:11px;padding:12px;outline:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.primary{background:var(--accent);color:#07130e}.danger{background:#4a2028}.ghost{background:transparent;border:1px solid var(--line)}
+.hidden{display:none!important}
+.setupPlayers{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+.playerSetup{background:#0d1627;border:1px solid var(--line);border-radius:12px;padding:10px}
+.playerSetup .name{font-weight:800;font-size:13px;margin-bottom:7px}
+.tabs{display:flex;gap:7px;margin:8px 0}.tabs button{flex:1}.tabs .active{background:var(--accent);color:#07130e}
+ .table{position:relative;height:500px;margin:10px 0;background:radial-gradient(ellipse at center,#174b3b 0%,#0f392d 58%,#09251e 100%);border:7px solid #593c25;border-radius:50%/42%;box-shadow:inset 0 0 0 2px #a06b3f,0 12px 30px #0008}
+.seat{position:absolute;transform:translate(-50%,-50%);width:104px;text-align:center;z-index:2}
+.seat button{width:104px;padding:5px 2px;background:transparent;border:0;border-radius:12px;box-shadow:none;pointer-events:none}
+.seat.hero button{border:0}
+.seat .pos{font-size:10px;color:var(--muted)}.seat .nm{font-size:12px;font-weight:800}.seat .stk{font-size:13px;margin-top:2px}.streetBet{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;font-weight:800;margin:1px 0 2px;min-height:18px;transform:translateY(2px)}.chipIcon{width:16px;height:16px;border-radius:50%;display:inline-block;background:radial-gradient(circle at center,#fff 0 22%,#d84a4a 23% 52%,#fff 53% 63%,#d84a4a 64% 100%);border:1px solid #fff;box-shadow:1px 2px 0 #8e2b2b,0 2px 4px #0008}.unknown{color:var(--muted)}
+.pot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;font-weight:900;font-size:20px}.pot small{display:block;color:#c8d4df;font-size:10px;font-weight:600}
+/* Visual table seats are position-based, not action-order based. */
+.seat.slot0{left:50%;top:8%}.seat.slot1{left:80%;top:22%}.seat.slot2{left:88%;top:50%}.seat.slot3{left:78%;top:73%}.seat.slot4{left:60%;top:90%}.seat.slot5{left:40%;top:90%}.seat.slot6{left:22%;top:73%}.seat.slot7{left:12%;top:50%}.seat.slot8{left:20%;top:22%}
+.board{display:flex;gap:8px;justify-content:center;margin:6px 0 14px}.boardCardWrap{position:relative;width:62px;height:82px;flex:0 0 62px}.boardPlayingCard{width:62px;height:82px;border-radius:8px;background:linear-gradient(145deg,#fff,#f2f3f5);color:#111;border:1px solid #c7cbd1;box-shadow:0 2px 6px #0009;display:flex;align-items:center;justify-content:center;position:absolute;inset:0;font-weight:900}.boardPlayingCard.red{color:#c62828}.boardPlayingCard .boardRank{font-size:24px;line-height:24px}.boardPlayingCard .boardSuit{font-size:24px;line-height:21px;margin-left:2px}.boardPlayingCard.empty{color:#8b98aa;background:#101a2c;border-color:#34445f}.boardInput{position:absolute!important;inset:0;width:100%!important;height:100%;opacity:0;cursor:pointer;border:0!important;padding:0!important}.boardPlayingCard:after{content:"";position:absolute;inset:4px;border:1px solid #e3e5e8;border-radius:5px;pointer-events:none}
+.street{font-weight:800}.street span{color:var(--muted);font-weight:500;font-size:12px}.prompt{font-size:18px;font-weight:900;margin-top:7px}.stackPrompt{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}.stackPrompt label{font-size:12px}.stackPrompt input{margin-bottom:0}.disabled{opacity:.45;pointer-events:none}.board input:focus{border-color:var(--accent)}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.actions button{padding:14px 7px}.allin{background:#6b2635}.fold{background:#4a2028}.check{background:#20334c}.call{background:#1d4a3b}.bet{background:#4b3d1b}
+.log{max-height:280px;overflow:auto}.line{padding:8px 0;border-bottom:1px solid #22304a;font-size:13px}.line:last-child{border-bottom:0}
+.modal{position:fixed;inset:0;background:#0009;display:flex;align-items:flex-end;z-index:10}.sheet{width:100%;max-width:760px;margin:auto;background:var(--panel);border-radius:20px 20px 0 0;padding:16px calc(16px + env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom))}.sheet h2{font-size:18px;margin:0 0 12px}.amount{margin:10px 0}.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0}.quick button{padding:10px;font-size:12px}
+.status{font-size:12px;color:var(--muted);min-height:17px;margin-top:7px}
+.historyItem{padding:12px 0;border-bottom:1px solid var(--line)}.historyItem b{font-size:14px}
+.small{font-size:11px;color:var(--muted)}
+
+.cards{display:flex;justify-content:center;gap:3px;margin:0 0 3px}
+.playingCard{
+ display:inline-flex;position:relative;flex-direction:column;align-items:center;justify-content:center;
+ background:linear-gradient(145deg,#fff,#f2f3f5);color:#111;border:1px solid #c7cbd1;
+ border-radius:6px;width:38px;height:51px;font-weight:900;box-shadow:0 2px 5px #0009;
+ overflow:hidden;
+}
+.playingCard.red{color:#c62828}
+.playingCard .cardRank{font-size:16px;line-height:15px}
+.playingCard .cardSuit{font-size:15px;line-height:15px}
+.playingCard .cardCorner{position:absolute;bottom:2px;right:3px;font-size:6px;opacity:.7;transform:rotate(180deg)}
+.playingCard:after{content:"";position:absolute;inset:3px;border:1px solid #e3e5e8;border-radius:4px;pointer-events:none}
+.cardback{display:inline-block;width:24px;height:30px;border-radius:4px;background:repeating-linear-gradient(45deg,#284a78 0,#284a78 2px,#d7e2ef 2px,#d7e2ef 4px);border:1px solid #fff;box-shadow:0 1px 3px #0008}
+.heroCards{margin-bottom:5px;transform:scale(1.03);transform-origin:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div><h1>♠ Poker Hand Tracker</h1><div class="sub">Fast live-table entry · v14</div></div><button id="resetBtn" class="ghost">New</button></header>
+
+<section id="setup">
+  <div class="card">
+    <div class="grid2">
+      <div><label>Game</label><input id="game" value="1/3 NLH"></div>
+      <div><label>Players</label><select id="count"></select></div>
+    </div>
+    <div class="grid2" style="margin-top:10px">
+      <div><label>Your position</label><select id="heroPos"></select></div>
+      <div><label>Your starting stack</label><input id="heroStack" type="number" inputmode="decimal" value="300"></div>
+    </div>
+    <div style="margin-top:10px"><label>Your hole cards</label><input id="heroCards" placeholder="Ah Ad" autocapitalize="characters"></div>
+    <div class="grid2" style="margin-top:10px">
+      <div><label>Rake % <span class="small">(estimate)</span></label><input id="rakePct" type="number" inputmode="decimal" value="10"></div>
+      <div><label>Rake cap <span class="small">(estimate)</span></label><input id="rakeCap" type="number" inputmode="decimal" value="5"></div>
+    </div>
+    <div class="small" style="margin-top:10px">You will enter each villain's stack only when action reaches them. If they fold before you know their stack, just tap Fold.</div>
+    <div class="status" id="setupStatus"></div>
+  </div>
+  <button id="startBtn" class="primary" style="width:100%;font-size:17px">Start Hand</button>
+</section>
+
+<section id="record" class="hidden">
+  <div class="tabs"><button id="recordTab" class="active">Record</button><button id="historyTab">History</button></div>
+  <div class="card" style="padding:10px">
+    <div class="grid3">
+      <div><div class="small">Hand</div><b id="handNo">1</b></div>
+      <div><div class="small">Street</div><b id="streetLabel">Preflop</b></div>
+      <div><div class="small">Hero</div><b id="heroStackLabel">$300</b></div>
+    </div>
+    <div class="grid3" style="margin-top:9px">
+      <div><div class="small">Pot before street</div><b id="pot">$0</b></div>
+      <div><div class="small">Est. rake</div><b id="rakeLabel">$0</b></div>
+      <div><div class="small">Net pot before street</div><b id="netPotLabel">$0</b></div>
+    </div>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="table" id="table">
+    <div class="pot"><small>POT</small><span id="tablePot">$0</span></div>
+  </div>
+  <div class="card">
+    <div class="street" id="streetTitle">Preflop</div>
+    <div class="prompt" id="promptText">Waiting for action…</div><div class="small" id="sequenceHint" style="margin-top:4px"></div>
+    <div class="actions" style="margin-top:10px">
+      <button id="guidedFold" class="fold">Fold</button>
+      <button id="guidedCheckCall" class="call">Call</button>
+      <button id="guidedRaise" class="bet">Raise</button>
+      <button id="guidedAllIn" class="allin hidden">All-in</button>
+    </div>
+    <div id="stackPrompt" class="stackPrompt hidden">
+      <label id="stackPromptLabel">Stack behind</label>
+      <div style="display:flex;gap:7px"><input id="guidedStack" type="number" inputmode="decimal" placeholder="Enter stack"><button id="guidedSetStack" class="primary">Continue</button></div>
+      <button id="guidedStackFold" class="fold" style="width:100%;margin-top:8px">Fold without entering stack</button>
+    </div>
+    <div id="raisePrompt" class="stackPrompt hidden">
+      <label>Raise-to amount</label>
+      <input id="guidedRaiseAmount" type="number" inputmode="decimal" placeholder="e.g. 15">
+      <div class="actions" style="margin-top:8px"><button id="guidedRaiseConfirm" class="bet">Confirm Raise</button><button id="guidedRaiseCancel" class="ghost">Cancel</button></div>
+    </div>
+    <div class="status" id="guidedStatus"></div>
+    <button id="nextStreet" class="primary hidden" style="width:100%;margin-top:10px">Deal Flop</button>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b>Action log</b><button id="undoBtn" class="ghost" style="padding:7px 10px">Undo</button></div>
+    <div id="log" class="log"></div>
+  </div>
+  <div id="revealCard" class="card hidden">
+    <b>Villain had <span class="small">(optional)</span></b>
+    <div class="grid2" style="margin-top:9px">
+      <div><label>Player</label><select id="revealPlayer"></select></div>
+      <div><label>Hole cards</label><input id="revealCards" placeholder="Ah Kd" autocapitalize="characters"></div>
+    </div>
+    <button id="addRevealBtn" class="ghost" style="width:100%;margin-top:8px">Add Villain Hand</button>
+    <div class="small" style="margin-top:7px">You can save the hand without entering any reveal.</div>
+  </div>
+  <button id="finishBtn" class="primary" style="width:100%">Finish & Save Hand</button>
+</section>
+
+<section id="history" class="hidden">
+  <div class="tabs"><button id="backRecord">Record</button><button class="active">History</button></div>
+  <div class="card"><div id="historyList"></div></div>
+</section>
+</div>
+
+
+
+<script>
+(function(){
+// Single source of truth for table positions.
+// IMPORTANT: never infer order from seat layout or array indexes elsewhere.
+// 8-handed is UTG -> UTG+1 -> LJ -> HJ -> CO -> BTN -> SB -> BB.
+// 9-handed adds UTG+2 between UTG+1 and LJ.
+const POSITIONS=Object.freeze({
+  3:Object.freeze(["BTN","SB","BB"]),
+  4:Object.freeze(["CO","BTN","SB","BB"]),
+  5:Object.freeze(["HJ","CO","BTN","SB","BB"]),
+  6:Object.freeze(["LJ","HJ","CO","BTN","SB","BB"]),
+  7:Object.freeze(["UTG","LJ","HJ","CO","BTN","SB","BB"]),
+  8:Object.freeze(["UTG","UTG+1","LJ","HJ","CO","BTN","SB","BB"]),
+  9:Object.freeze(["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"])
+});
+let state=null, undoStack=[];
+const $=id=>document.getElementById(id);
+const money=n=>"$"+Number(n||0).toFixed(2).replace(/\.00$/ ,"");
+const stackText=n=>n===null?"Stack ?":money(n);
+const positions=()=>POSITIONS[+$('count').value];
+function fillSelect(el,arr){el.innerHTML=arr.map(x=>`<option>${x}</option>`).join("")}
+function setupSeats(){const pos=positions(),old=$('heroPos').value;fillSelect($('heroPos'),pos);$('heroPos').value=pos.includes(old)?old:pos[0]}
+function init(){fillSelect($('count'),Object.keys(POSITIONS));$('count').value='6';$('rakePct').value='10';$('rakeCap').value='5';setupSeats();renderHistory()}
+$('count').addEventListener('change',setupSeats);$('heroPos').addEventListener('change',setupSeats);$('startBtn').addEventListener('click',start);
+function blindInfo(){const m=($('game').value||'').match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);return m?{sb:Number(m[1]),bb:Number(m[2])}:{sb:1,bb:3}}
+function blindPositions(){return {sb:'SB',bb:'BB'}}
+function start(){
+ try{
+  const pos=positions(),heroPos=$('heroPos').value,blinds=blindInfo();
+  const heroInput=$('heroCards').value.trim().toUpperCase();
+  const heroCodes=heroInput.split(/\s+/).filter(Boolean).map(normalizeCard);
+  if(heroCodes.length!==2 || heroCodes.some(c=>!c) || new Set(heroCodes).size!==2) throw new Error('Enter two different hole cards, e.g. Ah Ad.');
+  state={game:$('game').value||'Poker',cards:heroCodes.join(' '),players:pos.map(p=>({pos:p,stack:p===heroPos?Number($('heroStack').value):null,folded:false,streetInvested:0,totalInvested:0,actedSinceRaise:false,canRaise:true,allIn:false})),hero:heroPos,pot:0,street:'Preflop',board:[],actions:[],handNo:Number(localStorage.getItem('pokerHandNo')||0)+1,currentBet:blinds.bb,lastRaiseSize:blinds.bb,rakePct:Number($('rakePct').value||0),rakeCap:Number($('rakeCap').value||0),flopSeen:false,reveals:[],actorOrder:[],actorIndex:0,awaitingStack:false,roundComplete:false,dealPending:false};
+  const bp=blindPositions();postBlind(getPlayer(bp.sb),blinds.sb,'SB blind');postBlind(getPlayer(bp.bb),blinds.bb,'BB blind');
+  localStorage.setItem('pokerHandNo',state.handNo);undoStack=[];showRecord();beginStreet();render();
+ }catch(e){$('setupStatus').textContent='Could not start: '+e.message}
+}
+function postBlind(p,amount,label){if(!p)return;const a=p.stack===null?amount:Math.min(amount,p.stack);if(p.stack!==null)p.stack-=a;p.streetInvested+=a;p.totalInvested+=a;state.pot+=a;state.actions.push({pos:p.pos,action:label,amount:a,street:'Preflop'})}
+function showRecord(){$('setup').classList.add('hidden');$('history').classList.add('hidden');$('record').classList.remove('hidden')}
+function getPlayer(pos){return state.players.find(p=>p.pos===pos)}
+function hero(){return getPlayer(state.hero)}
+function streetCommitted(){return state?state.players.reduce((sum,p)=>sum+(p.streetInvested||0),0):0}
+function displayPot(){return Math.max(0,(state?state.pot:0)-streetCommitted())}
+function estimatedRake(){if(!state||!state.flopSeen)return 0;const pct=Math.max(0,state.rakePct)/100,cap=Math.max(0,state.rakeCap);return cap>0?Math.min(state.pot*pct,cap):state.pot*pct}
+function preflopOrder(){
+  // Use the exact table definition. Do not derive this from visual seat order.
+  const n=+$('count').value;
+  if(n===3) return ['BB','BTN','SB'];
+  return POSITIONS[n].slice();
+}
+function postflopOrder(){
+  const pre=preflopOrder();
+  // Postflop starts at SB, then BB, then the earliest remaining position.
+  const blinds=["SB","BB"];
+  return blinds.filter(p=>pre.includes(p)).concat(pre.filter(p=>!blinds.includes(p)));
+}
+// Visual positions go clockwise around the table from BTN. This is deliberately
+// separate from the preflop action order. For 8-handed, for example, the visual
+// order is BTN, SB, BB, UTG, UTG+1, LJ, HJ, CO.
+const VISUAL_SLOTS=Object.freeze({
+  3:Object.freeze({BTN:0,SB:1,BB:7}),
+  4:Object.freeze({BTN:0,SB:1,BB:2,CO:7}),
+  5:Object.freeze({BTN:0,SB:1,BB:2,CO:7,HJ:6}),
+  6:Object.freeze({BTN:0,SB:1,BB:2,LJ:5,HJ:6,CO:7}),
+  7:Object.freeze({BTN:0,SB:1,BB:2,UTG:3,LJ:5,HJ:6,CO:7}),
+  8:Object.freeze({BTN:0,SB:1,BB:2,UTG:3,"UTG+1":4,LJ:5,HJ:6,CO:7}),
+  9:Object.freeze({BTN:0,SB:1,BB:2,UTG:3,"UTG+1":4,"UTG+2":5,LJ:6,HJ:7,CO:8})
+});
+function visualSlot(pos){return VISUAL_SLOTS[+$('count').value]?.[pos] ?? 0}
+(function verifyVisualSlots(){
+  const expected8={BTN:0,SB:1,BB:2,UTG:3,"UTG+1":4,LJ:5,HJ:6,CO:7};
+  if(JSON.stringify(VISUAL_SLOTS[8])!==JSON.stringify(expected8)) throw new Error('8-handed visual seat map mismatch');
+})();
+// Defensive checks: these run on every page load so a future edit cannot silently
+// reintroduce a position-order bug.
+(function verifyPositionOrder(){
+  const expected={
+    3:["BTN","SB","BB"],
+    4:["CO","BTN","SB","BB"],
+    5:["HJ","CO","BTN","SB","BB"],
+    6:["LJ","HJ","CO","BTN","SB","BB"],
+    7:["UTG","LJ","HJ","CO","BTN","SB","BB"],
+    8:["UTG","UTG+1","LJ","HJ","CO","BTN","SB","BB"],
+    9:["UTG","UTG+1","UTG+2","LJ","HJ","CO","BTN","SB","BB"]
+  };
+  for(const n of Object.keys(expected)){
+    if(JSON.stringify(POSITIONS[n])!==JSON.stringify(expected[n])){
+      throw new Error('Position order mismatch for '+n+' handed table');
+    }
+  }
+})();
+function activeOrder(){return state.street==='Preflop'?preflopOrder():postflopOrder()}
+function nextActiveIndex(from,requireUnacted=true){
+  const order=state.actorOrder;
+  for(let step=1;step<=order.length;step++){
+    const i=(from+step)%order.length,p=getPlayer(order[i]);
+    if(!p||p.folded||p.allIn||p.stack===0)continue;
+    if(requireUnacted&&!p.actedSinceRaise) return i;
+    if(!requireUnacted)return i;
+  }
+  return -1;
+}
+function beginStreet(){
+  state.actorOrder=activeOrder();
+  if(state.dealPending){state.actorIndex=-1;state.roundComplete=false;render();return}
+  state.actorIndex=state.actorOrder.findIndex(pos=>{const x=getPlayer(pos);return x&&!x.folded&&!x.allIn&&x.stack!==0});
+  state.roundComplete=state.actorIndex<0;
+  render();
+}
+function currentPlayer(){return state&&state.actorIndex>=0&&state.actorOrder.length?getPlayer(state.actorOrder[state.actorIndex]):null}
+function canAct(p){return p&&!p.folded&&!p.allIn&&p.stack!==0}
+function cpCanRaise(p){return p.canRaise!==false}
+function roundIsComplete(){
+  const active=state.players.filter(p=>!p.folded);
+  if(active.length<=1)return true;
+  // Players marked all-in are finished for this street even if an unmatched
+  // portion was returned to them. They must never force another street.
+  const live=active.filter(p=>!p.allIn && p.stack!==0);
+  if(live.length===0)return true;
+  // If nobody has bet, everyone who can act must have acted. If there is a
+  // bet/raise, everyone who can still act must have matched it and acted.
+  return live.every(p=>p.streetInvested===state.currentBet) && live.every(p=>p.actedSinceRaise);
+}
+function render(){
+ $('handNo').textContent=state.handNo;$('streetLabel').textContent=state.street;$('heroStackLabel').textContent=stackText(hero().stack);const shownPot=displayPot();$('pot').textContent=money(shownPot);$('tablePot').textContent=money(shownPot);const r=estimatedRake();$('rakeLabel').textContent=money(r);$('netPotLabel').textContent=money(Math.max(0,shownPot-r));$('streetTitle').textContent=state.street;
+ renderBoard();
+ const t=$('table');t.querySelectorAll('.seat').forEach(x=>x.remove());
+ state.players.forEach((p)=>{const d=document.createElement('div');d.className='seat slot'+visualSlot(p.pos)+(p.pos===state.hero?' hero':'');const cards=p.pos===state.hero&&state.cards?`<div class="cards heroCards">${formatCards(state.cards)}</div>`:(!p.folded?'<div class="cards"><span class="cardback"></span><span class="cardback"></span></div>':'');const streetBet=p.streetInvested>0?`<div class="streetBet"><span class="chipIcon"></span>${money(p.streetInvested)}</div>`:'';d.innerHTML=`<div>${cards}${streetBet}<div class="pos">${p.pos}</div><div class="nm">${p.pos===state.hero?'HERO':p.folded?'FOLDED':'PLAYER'}</div><div class="stk ${p.stack===null?'unknown':''}">${stackText(p.stack)}</div></div>`;t.appendChild(d)});
+ const cp=currentPlayer();
+ if(state.dealPending){$('promptText').textContent=state.street==='Flop'?'Enter the 3 flop cards':`Enter the ${state.street.toLowerCase()} card`;$('guidedStatus').textContent='Enter the card(s) above, then action will start automatically.'}else if(cp){$('promptText').textContent=`${cp.pos}${cp.pos===state.hero?' — YOU':''} to act`;$('guidedStatus').textContent=cp.stack===null?'Enter stack or fold.':'Stack '+money(cp.stack)+' behind.'}else{$('promptText').textContent=state.roundComplete?'Betting round complete':'Waiting for action…';$('guidedStatus').textContent=''}
+ const hint=$('sequenceHint');
+ if(state.dealPending) hint.textContent='Enter the board card(s) above. The next player will be prompted automatically.';
+ else if(cp) hint.textContent=`Recording in order — ${cp.pos} must act now.`;
+ else hint.textContent=state.roundComplete?'All required actions for this street are recorded.':'';
+ updateGuidedControls();
+ $('log').innerHTML=state.actions.map(a=>{
+   let label=a.action;
+   if(a.action==='raise-to') label='raise-to';
+   else if(a.action==='bet') label='bet';
+   else if(a.action==='revealed') label='villain had';
+   return `<div class="line"><b>${a.pos}</b> — ${label}${a.amount?` ${money(a.amount)}`:''}${a.cards?` ${a.cards.join(' ')}`:''} <span class="small">(${a.street})</span></div>`;
+ }).reverse().join('')||'<div class="small" style="padding-top:10px">No actions yet.</div>';
+}
+function normalizeCard(code){
+ const c=(code||'').trim().toUpperCase();
+ if(!/^(10|[2-9TJQKA])[HDCS]$/.test(c)) return null;
+ return c.replace(/^10/,'T');
+}
+function heroCardCodes(){
+ return state.cards.split(/\s+/).filter(Boolean).map(normalizeCard).filter(Boolean);
+}
+function boardCardError(index,code){
+ const c=normalizeCard(code);
+ if(!c) return 'Use a valid card such as Ah, 2d, Ts, or KC.';
+ const heroSet=new Set(heroCardCodes());
+ if(heroSet.has(c)) return `${c} is already in the hero hand.`;
+ const duplicate=state.board.some((x,i)=>i!==index && normalizeCard(x)===c);
+ if(duplicate) return `${c} is already on the board.`;
+ return '';
+}
+function boardCardMarkup(code){
+ const c=(code||'').trim().toUpperCase();
+ if(!c)return `<div class="boardPlayingCard empty"><span class="boardRank">+</span></div>`;
+ const v=c.slice(0,-1),s=c.slice(-1),map={H:'♥',D:'♦',C:'♣',S:'♠'},sym=map[s]||s,red=(s==='H'||s==='D')?' red':'';
+ return `<div class="boardPlayingCard${red}"><span class="boardRank">${v}</span><span class="boardSuit">${sym}</span></div>`;
+}
+function renderBoard(){
+ const b=$('board');b.innerHTML='';if(state.street==='Preflop')return;
+ const count=state.street==='Flop'?3:state.street==='Turn'?4:5;
+ for(let i=0;i<count;i++){
+  const w=document.createElement('div');w.className='boardCardWrap';
+  w.innerHTML=boardCardMarkup(state.board[i]);
+  const x=document.createElement('input');x.className='boardInput';x.value=state.board[i]||'';x.placeholder=['F1','F2','F3','T','R'][i];x.maxLength=2;
+  x.setAttribute('aria-label',`Board card ${i+1}`);
+  x.oninput=()=>{
+   const raw=x.value.toUpperCase().replace(/[^2-9TJQKAHDSC]/g,'').slice(0,2);
+   x.value=raw;
+   if(raw.length<2){
+    state.board[i]=raw;
+    w.firstElementChild.outerHTML=boardCardMarkup(raw);
+    checkDealComplete();
+    return;
+   }
+   const err=boardCardError(i,raw);
+   if(err){
+    state.board[i]='';x.value='';w.firstElementChild.outerHTML=boardCardMarkup('');
+    $('guidedStatus').textContent=err;
+    return;
+   }
+   state.board[i]=normalizeCard(raw);
+   w.firstElementChild.outerHTML=boardCardMarkup(state.board[i]);
+   if(state.street==='Flop'&&state.board[0]&&state.board[1]&&state.board[2])state.flopSeen=true;
+   checkDealComplete();
+  };
+  w.appendChild(x);b.appendChild(w);
+ }
+}
+function checkDealComplete(){
+ if(!state.dealPending)return;
+ const needed=state.street==='Flop'?3:state.street==='Turn'?4:5;
+ if(state.board.slice(0,needed).some(c=>!normalizeCard(c)))return;
+ for(let i=0;i<needed;i++){
+  const err=boardCardError(i,state.board[i]);
+  if(err){$('guidedStatus').textContent=err;return;}
+ }
+ state.dealPending=false;
+ if(needed>=3)state.flopSeen=true;
+ state.currentBet=0;state.lastRaiseSize=0;
+ state.players.forEach(p=>{p.streetInvested=0;p.actedSinceRaise=false;p.canRaise=true;p.allIn=false});
+ state.roundComplete=false;beginStreet();render();
+}
+function formatCards(s){return s.split(/\s+/).filter(Boolean).slice(0,2).map(cardGraphic).join('')}
+function cardGraphic(c){const v=c.slice(0,-1).toUpperCase(),s=c.slice(-1).toUpperCase(),map={H:'♥',D:'♦',C:'♣',S:'♠'},red=(s==='H'||s==='D')?' red':'';return `<span class="playingCard${red}"><span class="cardRank">${v}</span><span class="cardSuit">${map[s]||s}</span><span class="cardCorner">${v}${map[s]||s}</span></span>`}
+function updateGuidedControls(){
+ const cp=currentPlayer(),sp=$('stackPrompt'),rp=$('raisePrompt'),main=document.querySelector('#guidedFold').parentElement;
+ sp.classList.add('hidden');rp.classList.add('hidden');$('nextStreet').classList.add('hidden');$('guidedAllIn').classList.add('hidden');
+ if(state.dealPending){main.classList.add('hidden');return}
+ if(!cp){
+   main.classList.add('hidden');
+   if(state.roundComplete){
+     $('nextStreet').classList.remove('hidden');
+     $('nextStreet').textContent=state.street==='River'?'Finish & Save Hand':state.street==='Preflop'?'Deal Flop':state.street==='Flop'?'Deal Turn':'Deal River';
+   }
+   renderRevealUI();
+   return;
+ }
+ main.classList.remove('hidden');
+ if(cp.stack===null){
+   sp.classList.remove('hidden');
+   main.classList.add('hidden');
+   $('stackPromptLabel').textContent=`${cp.pos} stack behind${cp.pos===blindPositions().sb||cp.pos===blindPositions().bb?' (after blind)':''}`;
+   $('guidedStack').value='';
+   return;
+ }
+ const callAmt=Math.max(0,state.currentBet-cp.streetInvested);
+ const facingBet=callAmt>0;
+ const firstPostflopBet=state.street!=='Preflop' && state.currentBet===0;
+ $('guidedFold').classList.remove('hidden');
+ $('guidedCheckCall').classList.remove('hidden');
+ $('guidedFold').textContent='Fold';
+ $('guidedRaise').textContent=firstPostflopBet?'Bet':'Raise';
+ const minBet=blindInfo().bb;
+ const minRaiseSize=Math.max(state.lastRaiseSize||minBet,minBet);
+ const minRaiseTo=state.currentBet+minRaiseSize;
+ const raiseContribution=Math.max(0,minRaiseTo-cp.streetInvested);
+ const canAffordFullRaise=firstPostflopBet ? cp.stack>=minBet : (cp.stack>=raiseContribution && raiseContribution>0);
+ const raiseReopened=cp.canRaise!==false;
+ $('guidedRaise').classList.toggle('hidden', !raiseReopened || !canAffordFullRaise);
+ if(facingBet && cp.stack<callAmt){
+   // A short stack facing a wager cannot make a raise; their only legal
+   // choices in this tracker are fold or all-in.
+   $('guidedCheckCall').classList.add('hidden');
+   $('guidedRaise').classList.add('hidden');
+   if(cp.stack>0)$('guidedAllIn').classList.remove('hidden');
+   $('guidedStatus').textContent=`Not enough to call ${money(callAmt)} — fold or go all-in.`;
+   return;
+ }
+ $('guidedCheckCall').textContent=facingBet?`Call ${money(callAmt)}`:'Check';
+ $('guidedCheckCall').className=facingBet?'call':'check';
+ // All-in is available whenever the player has chips remaining, even when a
+ // full legal raise is not affordable. This is important for short all-ins.
+ if(cp.stack>0)$('guidedAllIn').classList.remove('hidden');
+}
+function renderRevealUI(){
+ const box=$('revealCard');
+ if(!box)return;
+ const show=state.street==='River'&&state.roundComplete;
+ box.classList.toggle('hidden',!show);
+ if(!show)return;
+ const candidates=state.players.filter(p=>p.pos!==state.hero&&!p.folded);
+ const sel=$('revealPlayer');
+ const old=sel.value;
+ sel.innerHTML=candidates.map(p=>`<option value="${p.pos}">${p.pos}</option>`).join('');
+ if(candidates.some(p=>p.pos===old))sel.value=old;
+ else if(candidates[0])sel.value=candidates[0].pos;
+}
+function addReveal(){
+ if(state.street!=='River'||!state.roundComplete)return;
+ const pos=$('revealPlayer').value;
+ const raw=$('revealCards').value.trim().toUpperCase();
+ const codes=raw.split(/\s+/).filter(Boolean).map(normalizeCard);
+ if(codes.length!==2||codes.some(c=>!c)||new Set(codes).size!==2){$('guidedStatus').textContent='Enter two different cards, e.g. Ah Kd.';return}
+ const heroSet=new Set(heroCardCodes());
+ const boardSet=new Set(state.board.map(normalizeCard).filter(Boolean));
+ if(codes.some(c=>heroSet.has(c)||boardSet.has(c))){$('guidedStatus').textContent='Those cards are already in the hero hand or on the board.';return}
+ const usedByOther=new Set((state.reveals||[]).flatMap(r=>r.cards));
+ if(codes.some(c=>usedByOther.has(c))){$('guidedStatus').textContent='One of those cards was already revealed for another player.';return}
+ state.reveals=state.reveals||[];
+ state.reveals.push({pos,cards:codes});
+ state.actions.push({pos,action:'revealed',cards:codes,amount:0,street:'River'});
+ $('revealCards').value='';
+ render();
+}
+function snapshot(){undoStack.push(JSON.stringify(state))}
+function saveStackAndContinue(){const cp=currentPlayer();if(!cp)return;const v=Number($('guidedStack').value);if(!Number.isFinite(v)||v<0){$('guidedStatus').textContent='Enter a valid stack size.';return}snapshot();cp.stack=v;cp.actedSinceRaise=false;cp.canRaise=true;cp.allIn=false;render()}
+function foldWithoutStack(){const cp=currentPlayer();if(!cp)return;applyAction('fold',0)}
+function applyAction(action,amount){
+ const p=currentPlayer();
+ if(!p)return;
+ snapshot();
+ const oldBet=state.currentBet;
+ let contribution=0;
+ let newStreetHigh=false;
+ let fullRaise=false;
+ let effectiveAllIn=false;
+
+ if(action==='fold'){
+   p.folded=true;
+   p.actedSinceRaise=true;
+ } else if(action==='check'){
+   if(state.currentBet>p.streetInvested){undoStack.pop();$('guidedStatus').textContent=`Cannot check — call is ${money(state.currentBet-p.streetInvested)}.`;return}
+   p.actedSinceRaise=true;
+ } else if(action==='call'){
+   const callAmt=Math.max(0,state.currentBet-p.streetInvested);
+   if(callAmt>p.stack){undoStack.pop();$('guidedStatus').textContent=`Not enough to call ${money(callAmt)} — fold or go all-in.`;return}
+   contribution=callAmt;
+   p.actedSinceRaise=true;
+ } else if(action==='bet'||action==='raise'||action==='allin'){
+   let target;
+   if(action==='allin'){
+     // An all-in means the actor puts their entire remaining stack forward.
+     // In a heads-up pot with one live opponent whose stack is known, cap the
+     // matched wager at that opponent's effective total stack and return any
+     // unmatched excess to the shover. The shover is still all-in for action
+     // flow, so the opponent gets a call/fold decision next.
+     target=p.streetInvested+p.stack;
+     const liveOpponents=state.players.filter(x=>x!==p&&!x.folded&&!x.allIn&&x.stack!==null);
+     if(liveOpponents.length===1){
+       const opp=liveOpponents[0];
+       const oppTotal=opp.streetInvested+Math.max(0,opp.stack);
+       if(oppTotal>=oldBet){
+         target=Math.min(target,oppTotal);
+         effectiveAllIn=true;
+       }
+     }
+   }else{
+     target=Number(amount);
+     if(!Number.isFinite(target)||target<=p.streetInvested){undoStack.pop();$('guidedStatus').textContent='Enter a valid amount.';return}
+   }
+
+   if(action==='bet'){
+     if(state.currentBet!==0){undoStack.pop();$('guidedStatus').textContent='A bet is only available when no one has bet on this street.';return}
+     const minBet=blindInfo().bb;
+     if(target<minBet){undoStack.pop();$('guidedStatus').textContent=`Minimum bet is ${money(minBet)} (one big blind).`;return}
+     contribution=target-p.streetInvested;
+     if(contribution>p.stack){undoStack.pop();$('guidedStatus').textContent=`${p.pos} only has ${money(p.stack)} behind.`;return}
+     fullRaise=true;
+   }else if(action==='raise'){
+     if(state.currentBet<=0){undoStack.pop();$('guidedStatus').textContent='No one has bet — use Bet instead of Raise.';return}
+     if(cpCanRaise(p)===false){undoStack.pop();$('guidedStatus').textContent='Raising is not reopened — fold or call.';return}
+     const minRaiseTo=state.currentBet+Math.max(state.lastRaiseSize||blindInfo().bb,blindInfo().bb);
+     if(target<minRaiseTo){undoStack.pop();$('guidedStatus').textContent=`Minimum raise-to is ${money(minRaiseTo)}.`;return}
+     contribution=target-p.streetInvested;
+     if(contribution>p.stack){undoStack.pop();$('guidedStatus').textContent=`${p.pos} only has ${money(p.stack)} behind.`;return}
+     fullRaise=true;
+   }else{
+     // All-in is always allowed. A short all-in can be less than a full raise;
+     // in that case it does not reopen raising for players who already acted.
+     contribution=Math.max(0,target-p.streetInvested);
+     if(contribution>p.stack){undoStack.pop();$('guidedStatus').textContent='Invalid all-in amount.';return}
+     const increment=target-oldBet;
+     fullRaise=target>oldBet && increment>=Math.max(state.lastRaiseSize||blindInfo().bb,blindInfo().bb);
+   }
+
+   if(contribution<0||contribution>p.stack){undoStack.pop();$('guidedStatus').textContent='Invalid chip amount.';return}
+   if(contribution>0){p.stack-=contribution;p.streetInvested+=contribution;p.totalInvested+=contribution;state.pot+=contribution}
+   p.actedSinceRaise=true;
+   newStreetHigh=p.streetInvested>state.currentBet;
+   if(action==='allin'){
+     p.allIn=true;
+     // If excess was returned to the shover, their stack reflects the returned
+     // chips but they are still finished acting for this street.
+     if(effectiveAllIn){
+       // p.stack already reflects only the matched contribution deducted.
+     }
+   }
+ }
+
+ if(newStreetHigh){
+   const increment=p.streetInvested-oldBet;
+   state.currentBet=p.streetInvested;
+   if(action==='bet'||action==='raise'||action==='allin'){
+     if(fullRaise){
+       state.lastRaiseSize=increment;
+       state.players.forEach(x=>{
+         if(x!==p&&!x.folded&&!x.allIn&&x.stack!==0){x.actedSinceRaise=false;x.canRaise=true}
+       });
+     }else{
+       state.players.forEach(x=>{
+         if(x!==p&&!x.folded&&!x.allIn&&x.stack!==0&&x.streetInvested<state.currentBet&&x.actedSinceRaise){
+           x.actedSinceRaise=false;
+           x.canRaise=false;
+         }
+       });
+     }
+   }
+ }
+
+ const loggedAction=action==='raise'?'raise-to':action;
+ state.actions.push({pos:p.pos,action:loggedAction,amount:contribution,street:state.street});
+ if(roundIsComplete()){
+   state.roundComplete=true;
+   state.actorIndex=-1;
+ }else{
+   state.roundComplete=false;
+   state.actorIndex=nextActiveIndex(state.actorIndex,true);
+   if(state.actorIndex<0){
+     state.roundComplete=roundIsComplete();
+     if(!state.roundComplete){state.actorIndex=-1;$('guidedStatus').textContent='Waiting for a player who still needs to act.'}
+   }
+ }
+ render();
+}
+function beginNextStreet(){
+ if(!state.roundComplete)return;
+ if(state.street==='River'){finishHand();return}
+ snapshot();
+ if(state.street==='Preflop'){state.street='Flop';state.board=['','',''];}
+ else if(state.street==='Flop'){state.street='Turn';state.board=state.board.slice(0,3).concat('');}
+ else if(state.street==='Turn'){state.street='River';state.board=state.board.slice(0,4).concat('');}
+ // Every street gets a fresh betting state. Never carry the prior street's
+ // current bet or minimum raise size into the next street.
+ state.currentBet=0;
+ state.lastRaiseSize=0;
+ state.players.forEach(p=>{p.streetInvested=0;p.actedSinceRaise=false;p.canRaise=true;});
+ state.dealPending=true;state.actorIndex=-1;state.roundComplete=false;beginStreet();render();
+}
+$('guidedSetStack').onclick=saveStackAndContinue;$('guidedStackFold').onclick=foldWithoutStack;$('guidedFold').onclick=()=>applyAction('fold',0);$('guidedCheckCall').onclick=()=>{const p=currentPlayer();if(!p)return;const callAmt=Math.max(0,state.currentBet-p.streetInvested);applyAction(callAmt?'call':'check',0)};$('guidedAllIn').onclick=()=>applyAction('allin',0);$('guidedRaise').onclick=()=>{const isBet=state.street!=='Preflop'&&state.currentBet===0;const minBet=blindInfo().bb;const minRaiseTo=isBet?minBet:state.currentBet+Math.max(state.lastRaiseSize||minBet,minBet);const rp=$('raisePrompt');rp.classList.remove('hidden');$('guidedRaiseAmount').value='';$('guidedRaiseAmount').placeholder=isBet?`Minimum ${money(blindInfo().bb)}`:`Minimum ${money(minRaiseTo)}`;$('guidedRaiseConfirm').textContent=isBet?'Confirm Bet':'Confirm Raise';$('raisePrompt').querySelector('label').textContent=isBet?'Bet amount':'Raise-to amount';$('guidedRaiseConfirm').dataset.mode=isBet?'bet':'raise';$('guidedRaiseAmount').focus()};$('guidedRaiseCancel').onclick=()=>{$('raisePrompt').classList.add('hidden')};$('guidedRaiseConfirm').onclick=()=>{const v=Number($('guidedRaiseAmount').value);if(Number.isFinite(v)){const mode=$('guidedRaiseConfirm').dataset.mode||'raise';applyAction(mode,v)}};$('guidedRaiseAmount').addEventListener('keydown',e=>{if(e.key==='Enter')$('guidedRaiseConfirm').click()});$('guidedStack').addEventListener('keydown',e=>{if(e.key==='Enter')$('guidedSetStack').click()});$('nextStreet').onclick=beginNextStreet;
+$('undoBtn').onclick=()=>{if(undoStack.length){state=JSON.parse(undoStack.pop());render()}};
+$('addRevealBtn').onclick=addReveal;
+$('finishBtn').onclick=finishHand;
+function finishHand(){const hands=JSON.parse(localStorage.getItem('pokerHands')||'[]');hands.unshift(state);localStorage.setItem('pokerHands',JSON.stringify(hands.slice(0,200)));renderHistory();$('record').classList.add('hidden');$('history').classList.remove('hidden')}
+$('historyTab').onclick=()=>{$('record').classList.add('hidden');$('history').classList.remove('hidden');renderHistory()};$('recordTab').onclick=showRecord;$('backRecord').onclick=showRecord;$('resetBtn').onclick=()=>{state=null;undoStack=[];$('record').classList.add('hidden');$('history').classList.add('hidden');$('setup').classList.remove('hidden');setupSeats()};function showRecord(){$('setup').classList.add('hidden');$('history').classList.add('hidden');$('record').classList.remove('hidden')}
+function renderHistory(){const h=JSON.parse(localStorage.getItem('pokerHands')||'[]');$('historyList').innerHTML=h.length?h.map(x=>`<div class="historyItem"><b>Hand #${x.handNo} — ${x.game}</b><div class="small">${x.cards||'No cards'} · ${x.actions.length} actions · Gross pot ${money(x.pot)} · Est. rake ${money((x.flopSeen?Math.min(x.pot*x.rakePct/100,x.rakeCap):0))}</div></div>`).join(''):'<div class="small">No saved hands yet.</div>'}
+init();
+})();
+</script>
+</body>
+</html>
